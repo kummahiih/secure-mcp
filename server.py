@@ -158,7 +158,6 @@ async def ask_agent(request: QueryRequest, token: str = Depends(verify_langchain
     """External endpoint routed through Caddy, secured with Bearer token."""
     logger.info(f"Received authenticated query: {request.query}")
     try:
-        # We inject a System Message to give the agent clear boundaries
         inputs = {
             "messages": [
                 ("system", "You are a helpful assistant with access to a local workspace. "
@@ -169,19 +168,30 @@ async def ask_agent(request: QueryRequest, token: str = Depends(verify_langchain
             ]
         }
         
-        # Increased check for recursion/completion
         result = agent.invoke(inputs)
         
         final_answer = ""
-        # Search backwards for the actual AI response
-        for msg in reversed(result["messages"]):
-            if msg.type == "ai" and msg.content:
-                final_answer = msg.content
-                break
-
-        # If we still have nothing, the agent might have only sent a tool call
-        if not final_answer:
-            final_answer = "The agent processed the request but did not generate a text response."
+        
+        # 1. Safely check for LangGraph's "messages" structure
+        if isinstance(result, dict) and "messages" in result:
+            # Search backwards for the actual AI response
+            for msg in reversed(result["messages"]):
+                if msg.type == "ai" and msg.content:
+                    final_answer = msg.content
+                    break
+            
+            # 2. If no text was found, extract the exact tool call or raw object
+            if not final_answer:
+                last_msg = result["messages"][-1]
+                tool_calls = getattr(last_msg, "tool_calls", [])
+                
+                if tool_calls:
+                    final_answer = f"DIAGNOSTIC: Agent generated a tool call but the loop stopped executing. Tool requested: {tool_calls}"
+                else:
+                    final_answer = f"DIAGNOSTIC: Agent returned no content and no tool calls. Last message: {last_msg}"
+        else:
+            # 3. Fallback for standard LangChain AgentExecutor
+            final_answer = result.get("output", str(result))
 
         return {"response": final_answer}
         

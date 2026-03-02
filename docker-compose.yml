@@ -4,7 +4,6 @@ services:
     container_name: caddy-sidecar
     ports:
       - "8443:8443"  # Ingress
-      - "8080:8080"  # Egress (for testing)
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -12,6 +11,9 @@ services:
       - ./certs:/certs:ro  # Mount CA for Caddy trust
     environment:
       - HOST_DOMAIN=${HOST_DOMAIN}
+      # Tell Caddy to use /tmp for its internal files so it doesn't crash from permission errors
+      - XDG_DATA_HOME=/tmp/caddy_data
+      - XDG_CONFIG_HOME=/tmp/caddy_config
     networks:
       - ext_net
       - int_net
@@ -32,6 +34,7 @@ services:
       - 1.1.1.1
     env_file:
       - .secrets.env
+      - .env          # Generated cluster tokens
     environment:
       - HOME=/tmp
       - LITELLM_NON_ROOT=true

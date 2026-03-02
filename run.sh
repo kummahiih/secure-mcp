@@ -6,7 +6,10 @@ echo "[$(date +'%H:%M:%S')] Starting cluster initialization..."
 # 1. Load Secrets
 if [ -f .secrets.env ]; then
     echo "[$(date +'%H:%M:%S')] Loading secrets from .secrets.env..."
+    # We use 'allexport' to make sure these are available for the key validation loop
+    set -a
     source .secrets.env
+    set +a
 else
     echo "[$(date +'%H:%M:%S')] Error: .secrets.env not found."
     exit 1
@@ -31,6 +34,7 @@ MCP_API_TOKEN=$(openssl rand -hex 32)
 LANGCHAIN_API_TOKEN=$(openssl rand -hex 32)
 
 # Create the standard .env file for Docker Compose
+# We append the .secrets.env content so Docker Compose has all keys in one place
 {
     echo "DYNAMIC_AGENT_KEY=$DYNAMIC_AGENT_KEY"
     echo "MCP_API_TOKEN=$MCP_API_TOKEN"
@@ -44,8 +48,6 @@ LANGCHAIN_API_TOKEN=$(openssl rand -hex 32)
     echo "export LANGCHAIN_API_TOKEN=\"$LANGCHAIN_API_TOKEN\""
 } > .cluster_tokens.env
 
-echo "[$(date +'%H:%M:%S')] Generated .env file for Docker Compose."
-
 # Ensure directories exist
 mkdir -p certs workspace
 
@@ -53,7 +55,6 @@ mkdir -p certs workspace
 if [ ! -f certs/ca.crt ]; then
     echo "[$(date +'%H:%M:%S')] Generating Root CA..."
     openssl genrsa -out certs/ca.key 4096
-    
     openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 3650 \
         -out certs/ca.crt \
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=ClusterRootCA" >/dev/null 2>&1
@@ -63,48 +64,43 @@ fi
 if [ ! -f certs/mcp.crt ]; then
     echo "[$(date +'%H:%M:%S')] Generating Leaf Certificate for MCP Server..."
     openssl genrsa -out certs/mcp.key 2048
-    
-    # Create a temporary config file for the SAN
     echo "subjectAltName=DNS:mcp-server,DNS:localhost,IP:127.0.0.1" > certs/mcp.ext
-
     openssl req -new -key certs/mcp.key -out certs/mcp.csr \
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=mcp-server" >/dev/null 2>&1
-        
-    # Use the -extfile flag to include the SAN
     openssl x509 -req -in certs/mcp.csr \
         -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial \
         -out certs/mcp.crt -days 365 -sha256 \
         -extfile certs/mcp.ext >/dev/null 2>&1
-        
     rm certs/mcp.ext
 fi
 
 # 6. Prepare mounted directories
-echo "[$(date +'%H:%M:%S')] Setting directory permissions..."
-chmod -R a+r certs || true
-chmod 777 workspace || true
+echo "[$(date +'%H:%M:%S')] Setting strict local directory permissions..."
 
-# 6.5. Pre-fetch Tiktoken encoding for offline/restricted DNS use
+# 750: You can do all, Group can read/enter, Others are completely blocked.
+chmod 750 certs workspace
+
+# 640: You can read/write, Group can read, Others get NOTHING.
+chmod 640 certs/*
+
 if [ ! -f 9b5ad716431e6077c748b039600b13ad ]; then
-    echo "[$(date +'%H:%M:%S')] Downloading tiktoken encoding map for offline use..."
+    echo "[$(date +'%H:%M:%S')] Downloading tiktoken encoding map..."
     curl -s -o 9b5ad716431e6077c748b039600b13ad https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
 fi
 
+# --- NEW: Check for setup-only flag ---
+if [[ "$1" == "--setup-only" ]]; then
+    echo "[$(date +'%H:%M:%S')] Setup complete. Exiting due to --setup-only flag."
+    exit 0
+fi
+
 # 7. Launch the stack
-source .cluster_tokens.env
-
-echo "[$(date +'%H:%M:%S')] Tearing down old containers and cleaning local images..."
-# --rmi local removes only the images built from your Dockerfiles
-# --remove-orphans cleans up any renamed services
+echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
 docker-compose down --rmi local --remove-orphans -v
-
-echo "[$(date +'%H:%M:%S')] Pruning dangling build layers to save disk space..."
 docker image prune -f
 
-echo "[$(date +'%H:%M:%S')] Building fresh containers..."
+echo "[$(date +'%H:%M:%S')] Building and Launching..."
 docker-compose build
-
-echo "[$(date +'%H:%M:%S')] Launching composite..."
 docker-compose up -d
 
 echo "----------------------------------------"

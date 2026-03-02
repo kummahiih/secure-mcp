@@ -4,6 +4,23 @@ set -e
 echo "[$(date +'%H:%M:%S')] Starting automated test suite..."
 
 echo "----------------------------------------"
+echo "[$(date +'%H:%M:%S')] 4/4: Running Docker Integration Tests..."
+
+if [ ! -f "./certs/mcp.crt" ]; then
+    echo "[$(date +'%H:%M:%S')] Certificates missing. Running init_build.sh..."
+    bash ./init_build.sh || bash ./run.sh --init-only 
+fi
+
+# Provide completely fake tokens so the Python SDKs and Docker Compose don't crash on boot
+export MCP_API_TOKEN="integration-test-mcp-token"
+export LANGCHAIN_API_TOKEN="integration-test-langchain-token"
+export OPENAI_API_KEY="sk-dummy-key-for-integration-tests"
+export ANTHROPIC_API_KEY="dummy-anthropic-key"
+export GEMINI_API_KEY="dummy-gemini-key"
+export OLLAMA_API_KEY="dummy-ollama-key"
+
+
+echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 1/4: Validating Caddy Edge Router..."
 bash ./caddy_test.sh
 
@@ -18,20 +35,16 @@ pytest langchain_test.py -v
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 4/4: Running Docker Integration Tests..."
 
-# Provide completely fake tokens so the Python SDKs and Docker Compose don't crash on boot
-export MCP_API_TOKEN="integration-test-mcp-token"
-export LANGCHAIN_API_TOKEN="integration-test-langchain-token"
-export OPENAI_API_KEY="sk-dummy-key-for-integration-tests"
-export ANTHROPIC_API_KEY="dummy-anthropic-key"
-export GEMINI_API_KEY="dummy-gemini-key"
-export OLLAMA_API_KEY="dummy-ollama-key"
+echo "[$(date +'%H:%M:%S')] 4/4: Running Docker Integration Tests..."
 
-echo "[$(date +'%H:%M:%S')] Setting directory permissions for tests..."
-chmod -R a+r certs || true
-chmod 777 workspace || true
+# 1. Generate the missing files
+# (Assuming run.sh handles cert generation)
+bash ./run.sh --setup-only 
 
-echo "[$(date +'%H:%M:%S')] Building containers..."
-docker-compose build
+
+# 3. Boot
+docker-compose up -d --build
+
 
 echo "[$(date +'%H:%M:%S')] Starting containers..."
 docker-compose up -d

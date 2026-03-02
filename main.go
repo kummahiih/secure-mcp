@@ -3,18 +3,17 @@ package main
 import (
 	"crypto/subtle"
 	"crypto/tls"
+	"encoding/json"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 )
 
-// setupRouter isolates the routing logic so it can be tested independently
-func setupRouter(rootDir *os.Root, token string) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
+func handleRead(rootDir *os.Root, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if !verifyToken(r, token) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -51,7 +50,145 @@ func setupRouter(rootDir *os.Root, token string) *http.ServeMux {
 
 		// 3. Write the raw bytes directly to the response
 		w.Write(data)
-	})
+	}
+}
+
+func handleRemove(rootDir *os.Root, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !verifyToken(r, token) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		targetPath := r.URL.Query().Get("path")
+
+		// rootDir.Remove is the secure way to delete within the jail
+		err := rootDir.Remove(targetPath)
+		if err != nil {
+			log.Printf("DELETE_ERROR: %v", err)
+			http.Error(w, "Failed to delete file", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		log.Printf("FILE_REMOVED: %s", targetPath)
+	}
+}
+
+func handleCreate(rootDir *os.Root, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !verifyToken(r, token) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		targetPath := r.URL.Query().Get("path")
+
+		// O_CREATE | O_EXCL prevents overwriting existing files
+		f, err := rootDir.OpenFile(targetPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if err != nil {
+			http.Error(w, "File already exists or invalid path", http.StatusBadRequest)
+			return
+		}
+		f.Close()
+		w.WriteHeader(http.StatusCreated)
+		log.Printf("FILE_CREATED: %s", targetPath)
+	}
+}
+
+func handleWrite(rootDir *os.Root, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !verifyToken(r, token) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Define the expected JSON payload
+		var req struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+			return
+		}
+
+		// Open file with Truncate to replace whole content
+		// 0644 gives read/write to owner and read-only to group/others
+		f, err := rootDir.OpenFile(req.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			log.Printf("WRITE_ERROR: %v", err)
+			http.Error(w, "Could not open file for writing", http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		_, err = f.WriteString(req.Content)
+		if err != nil {
+			log.Printf("WRITE_ERROR: %v", err)
+			http.Error(w, "Failed to write content", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		log.Printf("FILE_WRITTEN: %s (%d bytes)", req.Path, len(req.Content))
+	}
+}
+
+func handleList(rootDir *os.Root, token string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !verifyToken(r, token) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var files []string
+		// Use .FS() to satisfy the fs.FS interface for WalkDir
+		err := fs.WalkDir(rootDir.FS(), ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil // Skip paths that can't be accessed
+			}
+			if path == "." {
+				return nil
+			}
+
+			entry := path
+			if d.IsDir() {
+				entry += "/"
+			}
+			files = append(files, entry)
+			return nil
+		})
+
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"files": files,
+			"count": len(files),
+		})
+	}
+}
+
+// setupRouter isolates the routing logic so it can be tested independently
+func setupRouter(rootDir *os.Root, token string) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/read", handleRead(rootDir, token))
+
+	// Remove File
+	mux.HandleFunc("/remove", handleRemove(rootDir, token))
+
+	// Create Empty File
+	mux.HandleFunc("/create", handleCreate(rootDir, token))
+
+	// replace file content
+	mux.HandleFunc("/write", handleWrite(rootDir, token))
+
+	// list files
+	mux.HandleFunc("/list", handleList(rootDir, token))
 
 	return mux
 }

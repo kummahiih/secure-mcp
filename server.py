@@ -8,6 +8,7 @@ import requests
 from langchain_core.tools import tool
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
+import json
 
 
 # Configure logging to use a 24-hour clock format
@@ -86,10 +87,67 @@ def read_workspace_file(file_path: str) -> str:
         logger.error(f"Connection error: {e}")
         return f"Error: {str(e)}"
 
+@tool
+def delete_file(path: str):
+    """Removes a file from the workspace."""
+    resp = requests.delete(f"{MCP_SERVER_URL}/remove?path={path}", 
+                           headers={"Authorization": f"Bearer {MCP_API_TOKEN}"},
+                           verify="/certs/ca.crt")
+    return "File deleted" if resp.status_code == 200 else f"Error: {resp.text}"
+
+@tool
+def create_file(path: str):
+    """Creates a new empty file in the workspace."""
+    resp = requests.post(f"{MCP_SERVER_URL}/create?path={path}", 
+                         headers={"Authorization": f"Bearer {MCP_API_TOKEN}"},
+                         verify="/certs/ca.crt")
+    return "File created" if resp.status_code == 201 else f"Error: {resp.text}"
+
+@tool
+def write_file(path: str, content: str) -> str:
+    """
+    Overwrites the entire content of a file with new content. 
+    Use this to update files or create new ones with specific data.
+    """
+    url = f"{MCP_SERVER_URL}/write"
+    payload = {"path": path, "content": content}
+    headers = {"Authorization": f"Bearer {MCP_API_TOKEN}"}
+    
+    try:
+        # verify="/certs/ca.crt" ensures the internal TLS is trusted
+        response = requests.post(url, json=payload, headers=headers, verify="/certs/ca.crt")
+        
+        if response.status_code == 200:
+            return f"Successfully wrote to {path}"
+        else:
+            return f"Failed to write file: {response.status_code} - {response.text}"
+    except Exception as e:
+        return f"Error connecting to MCP server: {str(e)}"
 
 
 
-tools = [read_workspace_file]
+@tool
+def list_files() -> str:
+    """
+    Recursively lists all files and directories in the workspace.
+    Returns a JSON string containing the list of paths.
+    """
+    url = f"{MCP_SERVER_URL}/list"
+    headers = {"Authorization": f"Bearer {MCP_API_TOKEN}"}
+    
+    try:
+        response = requests.get(url, headers=headers, verify="/certs/ca.crt")
+        if response.status_code == 200:
+            files = response.json().get("files", [])
+            # Always return a JSON object for unambiguous parsing
+            return json.dumps({"files": files, "count": len(files)})
+        else:
+            return json.dumps({"error": f"HTTP {response.status_code}", "detail": response.text})
+    except Exception as e:
+        return json.dumps({"error": "connection_failed", "detail": str(e)})
+
+
+tools = [read_workspace_file, delete_file, create_file, write_file, list_files]
 agent = create_agent(llm, tools=tools)
 
 class QueryRequest(BaseModel):

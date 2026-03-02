@@ -1,0 +1,49 @@
+FROM python:3.12-slim
+
+# Prevent Python from writing pyc files to disk and ensure logs are output instantly
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# 2. Switch to root temporarily to perform the system-level installation
+USER root
+
+
+
+# Create the non-root user and group (UID 1000)
+RUN addgroup --gid 1000 appgroup && \
+    adduser --uid 1000 --gid 1000 --disabled-password --gecos "" appuser
+
+# Set the working directory
+WORKDIR /app
+
+# Install the required application and LLM provider libraries
+RUN pip install --no-cache-dir \
+    certifi \
+    fastapi \
+    uvicorn \
+    requests \
+    pydantic \
+    langchain \
+    langchain-openai \
+    langchain-anthropic \
+    langchain-google-genai \
+    langchain-community
+
+# 3. Copy the certificate from your host into the build
+COPY ./certs/ca.crt /tmp/ca.crt
+
+# 4. Dynamically ask Python exactly where certifi is, and append the cert.
+# This eliminates the "Directory nonexistent" path-guessing error!
+RUN cat /tmp/ca.crt >> $(python -c "import certifi; print(certifi.where())")
+
+# Copy the server script and enforce correct ownership
+COPY --chown=appuser:appgroup server.py .
+
+# Explicitly switch to the non-root user before running any code
+USER appuser
+
+# Expose the port that the Caddy sidecar will route traffic to
+EXPOSE 8000
+
+# Launch the server
+CMD ["python", "server.py"]

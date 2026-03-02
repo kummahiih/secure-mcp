@@ -1,0 +1,15 @@
+# Security
+.secrets.env
+.cluster_tokens.env
+.env
+certs/
+workspace/
+
+# Python
+venv/
+__pycache__/
+.pytest_cache/
+
+#tokens
+cl100k_base.tiktoken
+9b5ad716431e6077c748b039600b13ad

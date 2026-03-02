@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+
+# 1. Ensure the cluster is actually running and tokens exist
+if [ ! -f .cluster_tokens.env ]; then
+    echo "[$(date +'%H:%M:%S')] Error: .cluster_tokens.env not found."
+    echo "Please start the cluster with ./run.sh first to generate the tokens."
+    exit 1
+fi
+
+# 2. Load the tokens
+source .cluster_tokens.env
+
+# 3. Require a query argument
+if [ -z "$1" ]; then
+    echo "Usage: ./query.sh \"Your question here\""
+    echo "Example: ./query.sh \"Can you read the contents of test.txt in my workspace?\""
+    exit 1
+fi
+
+QUERY=$1
+
+echo "[$(date +'%H:%M:%S')] Sending query to secure LangChain agent..."
+
+# 4. Execute the authenticated request
+curl -s -X POST https://localhost:8443/ask \
+    --cacert ./certs/ca.crt \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $LANGCHAIN_API_TOKEN" \
+    -d "{\"query\": \"$QUERY\"}" | python3 -m json.tool
+
+echo "" # Print a final newline for terminal readability

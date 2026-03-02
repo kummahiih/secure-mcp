@@ -1,0 +1,25 @@
+{
+    admin off
+}
+
+# --- INGRESS: Access to Agent ---
+:8443 {
+    # Provide the cert and key directly
+    tls /certs/mcp.crt /certs/mcp.key
+
+    # Proxy to the langchain server
+    reverse_proxy langchain-server:8000
+}
+
+# EGRESS
+http://:8080 {
+    reverse_proxy https://host.docker.internal:443 {
+        # Use {$VAR} syntax and wrap in quotes
+        header_up Host "{$HOST_DOMAIN}"
+        transport http {
+            # This bypasses the CN/SAN check
+            tls_insecure_skip_verify 
+            tls_server_name "{$HOST_DOMAIN}"
+        }
+    }
+}

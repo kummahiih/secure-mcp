@@ -1,0 +1,112 @@
+services:
+  caddy-sidecar:
+    image: caddy:2-alpine
+    container_name: caddy-sidecar
+    ports:
+      - "8443:8443"  # Ingress
+      - "8080:8080"  # Egress (for testing)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro  # Mount CA for Caddy trust
+    environment:
+      - HOST_DOMAIN=${HOST_DOMAIN}
+    networks:
+      - ext_net
+      - int_net
+    depends_on:
+      - langchain-server
+    restart: unless-stopped
+
+  proxy:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy
+    user: "1000:1000"
+    ports:
+      - "4000:4000"  # <--- Add this line
+    cap_drop:
+      - ALL
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    env_file:
+      - .secrets.env
+    environment:
+      - HOME=/tmp
+      - LITELLM_NON_ROOT=true
+      - LITELLM_MASTER_KEY=${DYNAMIC_AGENT_KEY}
+      - LITELLM_LOG=ERROR
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+      # Tell LiteLLM (and its underlying HTTPX/AioHTTP) to trust your CA
+      - REQUESTS_CA_BUNDLE=/certs/ca.crt
+      - SSL_CERT_FILE=/certs/ca.crt
+
+      # Ensure it doesn't try to proxy internal traffic
+      - NO_PROXY=localhost,127.0.0.1,mcp-server,langchain-server
+    volumes:
+      - ./certs:/certs:ro  # Mount CA
+      - ./proxy_config.yaml:/tmp/config.yaml:ro
+      - ./proxy_wrapper.py:/app/proxy_wrapper.py:ro
+      # Mount the file to the path our script expects
+      - ./9b5ad716431e6077c748b039600b13ad:/tmp/tiktoken_cache/9b5ad716431e6077c748b039600b13ad:ro
+    # Run the mock wrapper instead of the standard LiteLLM start command
+    entrypoint: ["python3", "/app/proxy_wrapper.py"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - int_net
+    restart: unless-stopped
+
+  langchain-server:
+    build: 
+      context: .
+      dockerfile: Dockerfile.langchain
+    container_name: langchain-server
+    user: "1000:1000"
+    environment:
+      # This is the key the Agent sends to the Proxy
+      - OPENAI_API_KEY=${DYNAMIC_AGENT_KEY}
+      # This tells the Agent WHERE the proxy is
+      - OPENAI_API_BASE=http://proxy:4000/v1
+      - MCP_API_TOKEN=${MCP_API_TOKEN}
+      - LANGCHAIN_API_TOKEN=${LANGCHAIN_API_TOKEN}
+      - MCP_SERVER_URL=https://mcp-server:8443
+      - LANGCHAIN_DEBUG=true
+      - CURL_CA_BUNDLE=/certs/ca.crt
+      - REQUESTS_CA_BUNDLE=/certs/ca.crt
+      - SSL_CERT_FILE=/certs/ca.crt
+      # If LangChain uses older urllib3, this sometimes works:
+      - PYTHONHTTPSVERIFY=0
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      - int_net
+    depends_on:
+      - mcp-server
+      - proxy  # Added dependency to ensure the proxy boots first
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: mcp-server
+    user: "1000:1000"
+    environment:
+      - MCP_API_TOKEN=${MCP_API_TOKEN}
+      - SSL_CERT_FILE=/certs/ca.crt
+    volumes:
+      - ./workspace:/workspace
+      - ./certs:/certs:ro
+    networks:
+      - int_net
+    restart: unless-stopped
+
+
+
+networks:
+  ext_net:
+    driver: bridge
+  int_net:
+    internal: true

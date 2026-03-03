@@ -22,7 +22,7 @@ export OLLAMA_API_KEY="dummy-ollama-key"
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 1/4: Validating Caddy Edge Router..."
-bash ./caddy_test.sh
+bash ./caddy/caddy_test.sh
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 2/4: Running Golang MCP Server Tests..."

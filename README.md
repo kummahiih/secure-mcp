@@ -74,7 +74,6 @@ This project is structured into modular microservices, separating the edge routi
 ├── init_build.sh           # Initial environment setup and build script
 ├── query.sh                # CLI utility for sending test queries to the agent
 ├── run.sh                  # Operational script (generates certs, manages lifecycle)
-├── server.py               # Root-level server entry point
 ├── test.sh                 # Master test suite (runs unit and integration tests)
 └── README.md               # Project documentation
 ```

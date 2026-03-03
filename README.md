@@ -74,11 +74,6 @@ The MCP server implements the new `os.OpenRoot` capability. This creates a logic
 │   ├── query.sh                 # Client script to send queries to the agent
 │   ├── init_build.sh            # One-time build initialization
 │   └── test.sh                  # Comprehensive cluster health check
-│
-└── 🧪 Debugging Tools
-    ├── caddy_test.sh            # Validates proxy routing
-    ├── mcp_test.go              # Unit tests for Go tool logic
-    └── langchain_test.py        # Validates Agent-Proxy communication
 ```
 
 

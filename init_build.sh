@@ -32,7 +32,7 @@ pip install \
 
 echo "----------------------------------------"
 echo "downloading tokens"
-curl -o cl100k_base.tiktoken https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
+curl -o proxy/cl100k_base.tiktoken https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
 
 echo "[$(date +'%H:%M:%S')] Build environment initialized successfully!"
 echo "[$(date +'%H:%M:%S')] Note: Run 'source venv/bin/activate' in your terminal before running ./test.sh"

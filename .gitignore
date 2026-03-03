@@ -14,5 +14,5 @@ __pycache__/
 .aider.*
 
 #tokens
-cl100k_base.tiktoken
-9b5ad716431e6077c748b039600b13ad
+proxy/cl100k_base.tiktoken
+proxy/9b5ad716431e6077c748b039600b13ad

@@ -83,9 +83,9 @@ chmod 750 certs workspace
 # 640: You can read/write, Group can read, Others get NOTHING.
 chmod 640 certs/*
 
-if [ ! -f 9b5ad716431e6077c748b039600b13ad ]; then
+if [ ! -f proxy/9b5ad716431e6077c748b039600b13ad ]; then
     echo "[$(date +'%H:%M:%S')] Downloading tiktoken encoding map..."
-    curl -s -o 9b5ad716431e6077c748b039600b13ad https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
+    curl -s -o proxy/9b5ad716431e6077c748b039600b13ad https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
 fi
 
 # --- NEW: Check for setup-only flag ---

@@ -48,34 +48,36 @@ The MCP server implements the new `os.OpenRoot` capability. This creates a logic
 
 ---
 
-## 📂 Project Structure
+
+## 📂 Project files
+
+This project is structured into modular microservices, separating the edge routing, the language model agent, and the file system tools into distinct, containerized domains.
 
 ```text
 .
-├── 🐳 Docker & Orchestration
-│   ├── docker-compose.yml       # Primary service orchestration
-│   ├── Dockerfile.langchain     # Python environment for the AI Agent
-│   ├── Dockerfile.mcp           # Go 1.24 environment for the Tool server
-│   └── Caddyfile                # Reverse proxy & TLS configuration
-│
-├── ⚙️ Core Logic
-│   ├── fileserver/main.go       # MCP Server (Go) - Secure file handler
-│   ├── agent/server.py          # LangChain Server (Python) - Agent logic
-│   ├── proxy_wrapper.py         # LiteLLM customization layer
-│   └── proxy_config.yaml        # LiteLLM routing rules
-│
-├── 🔑 Security & Assets
-│   ├── certs/                   # Generated CA, Certs, and Keys (Auto-generated)
-│   ├── workspace/               # Shared data volume for AI file access
-│   └── cl100k_base.tiktoken     # Offline tokenizer cache for LiteLLM
-│
-├── 🚀 Scripts & Automation
-│   ├── run.sh                   # Main entry: Generates certs and boots cluster
-│   ├── query.sh                 # Client script to send queries to the agent
-│   ├── init_build.sh            # One-time build initialization
-│   └── test.sh                  # Comprehensive cluster health check
+├── agent/                  # Python LangChain integration and agent logic
+│   ├── langchain_test.py   # Unit tests for the agent and tools
+│   └── server.py           # FastAPI server exposing the agent endpoints
+├── caddy/                  # Edge router and reverse proxy
+│   ├── Caddyfile           # TLS and reverse proxy configuration
+│   └── caddy_test.sh       # Validation script for Caddy configuration
+├── fileserver/             # Golang MCP (Model Context Protocol) file server
+│   ├── go.mod              # Go module dependencies
+│   ├── main.go             # Core MCP server logic and tool handlers
+│   └── mcp_test.go         # Unit tests for the Go MCP handlers
+├── proxy/                  # Local proxy wrappers and routing
+│   ├── proxy_config.yaml   # Proxy configuration rules
+│   └── proxy_wrapper.py    # Python wrapper for proxy execution
+├── docker-compose.yml      # Orchestrates the Caddy, Agent, and MCP containers
+├── Dockerfile.langchain    # Container build steps for the Python agent
+├── Dockerfile.mcp          # Container build steps for the Go fileserver
+├── init_build.sh           # Initial environment setup and build script
+├── query.sh                # CLI utility for sending test queries to the agent
+├── run.sh                  # Operational script (generates certs, manages lifecycle)
+├── server.py               # Root-level server entry point
+├── test.sh                 # Master test suite (runs unit and integration tests)
+└── README.md               # Project documentation
 ```
-
 
 ## 🛠️ Operational Commands
 
@@ -83,3 +85,5 @@ The MCP server implements the new `os.OpenRoot` capability. This creates a logic
 The `run.sh` script automates certificate generation, token rotation, and container orchestration:
 ```bash
 ./run.sh
+./query.sh "Please read info.txt from my workspace."
+```

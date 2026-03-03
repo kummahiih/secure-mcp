@@ -26,11 +26,14 @@ bash ./caddy_test.sh
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 2/4: Running Golang MCP Server Tests..."
-go test mcp_test.go main.go -v
+(
+    cd fileserver
+    go test mcp_test.go main.go -v
+)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 3/4: Running Python LangChain Tests..."
-pytest langchain_test.py -v
+pytest agent/langchain_test.py -v
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 4/4: Running Docker Integration Tests..."

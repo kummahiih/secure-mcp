@@ -59,8 +59,8 @@ The MCP server implements the new `os.OpenRoot` capability. This creates a logic
 │   └── Caddyfile                # Reverse proxy & TLS configuration
 │
 ├── ⚙️ Core Logic
-│   ├── main.go                  # MCP Server (Go) - Secure file handler
-│   ├── server.py                # LangChain Server (Python) - Agent logic
+│   ├── fileserver/main.go       # MCP Server (Go) - Secure file handler
+│   ├── agent/server.py          # LangChain Server (Python) - Agent logic
 │   ├── proxy_wrapper.py         # LiteLLM customization layer
 │   └── proxy_config.yaml        # LiteLLM routing rules
 │

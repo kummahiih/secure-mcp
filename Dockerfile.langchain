@@ -16,25 +16,18 @@ RUN addgroup --gid 1000 appgroup && \
 # Set the working directory
 WORKDIR /app
 
-# Install the required application and LLM provider libraries
-RUN pip install --no-cache-dir \
-    certifi \
-    fastapi \
-    uvicorn \
-    requests \
-    pydantic \
-    langchain \
-    langchain-openai \
-    langchain-anthropic \
-    langchain-google-genai \
-    langchain-community
+# Copy the requirements file into the container
+COPY agent/requirements.txt /tmp/requirements.txt
+
+# Install dependencies from the file
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # 3. Copy the certificate from your host into the build
 COPY ./certs/ca.crt /tmp/ca.crt
 
 # 4. Dynamically ask Python exactly where certifi is, and append the cert.
 # This eliminates the "Directory nonexistent" path-guessing error!
-RUN cat /tmp/ca.crt >> $(python -c "import certifi; print(certifi.where())")
+RUN cat /tmp/ca.crt >> "$(python -c 'import certifi; print(certifi.where())')"
 
 # Copy the server script and enforce correct ownership
 COPY --chown=appuser:appgroup agent/server.py .
@@ -47,3 +40,6 @@ EXPOSE 8000
 
 # Launch the server
 CMD ["python", "server.py"]
+
+HEALTHCHECK --interval=1m --timeout=5s \
+  CMD pgrep -f "python" || exit 1

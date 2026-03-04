@@ -1,0 +1,10 @@
+certifi
+fastapi
+uvicorn
+requests
+pydantic
+langchain
+langchain-openai
+langchain-anthropic
+langchain-google-genai
+langchain-community

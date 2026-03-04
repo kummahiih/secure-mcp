@@ -3,7 +3,7 @@ WORKDIR /app
 COPY fileserver/* .
 RUN go build -o mcp-server main.go
 
-FROM alpine:latest
+FROM alpine:3.23.3
 RUN addgroup -g 1000 appgroup && adduser -u 1000 -G appgroup -S appuser
 
 USER appuser
@@ -11,3 +11,6 @@ WORKDIR /app
 COPY --from=builder /app/mcp-server .
 EXPOSE 8443
 CMD ["./mcp-server"]
+
+HEALTHCHECK --interval=1m --timeout=5s \
+  CMD pgrep -f "mcp-server" || exit 1

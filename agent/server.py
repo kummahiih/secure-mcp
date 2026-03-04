@@ -153,6 +153,10 @@ agent = create_agent(llm, tools=tools)
 class QueryRequest(BaseModel):
     query: str
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 @app.post("/ask")
 async def ask_agent(request: QueryRequest, token: str = Depends(verify_langchain_token)):
     """External endpoint routed through Caddy, secured with Bearer token."""

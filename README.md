@@ -86,3 +86,24 @@ The `run.sh` script automates certificate generation, token rotation, and contai
 ./run.sh
 ./query.sh "Please read info.txt from my workspace."
 ```
+
+## 🛡️ Security & Quality Auditing
+
+This project implements a multi-layered security approach to ensure dependencies and infrastructure are secure. We utilize industry-standard open-source tools to scan for vulnerabilities and misconfigurations.
+
+### 🔍 Security Toolset
+
+| Tool | Focus Area | Purpose |
+| :--- | :--- | :--- |
+| **pip-audit** | Python Libraries | Scans `agent/requirements.txt` for known CVEs. |
+| **govulncheck** | Go Modules | Analyzes Go code for reachable vulnerabilities. |
+| **hadolint** | Dockerfiles | Lints `Dockerfile.*` for security best practices. |
+| **trivy** | Infrastructure | Scans `docker-compose.yml` and images for leaks. |
+
+
+### 🚀 Running the Full Test Suite
+To run the full suite (auditing Python, Go, and Docker configurations), execute:
+
+```bash
+./test.sh
+```

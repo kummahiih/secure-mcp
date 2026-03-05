@@ -60,11 +60,11 @@ if [ ! -f certs/ca.crt ]; then
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=ClusterRootCA" >/dev/null 2>&1
 fi
 
-# 5. Generate the Leaf Certificate for the MCP Server
+# 5. Generate the Leaf Certificate for the MCP and proxy Server
 if [ ! -f certs/mcp.crt ]; then
     echo "[$(date +'%H:%M:%S')] Generating Leaf Certificate for MCP Server..."
     openssl genrsa -out certs/mcp.key 2048
-    echo "subjectAltName=DNS:mcp-server,DNS:localhost,IP:127.0.0.1" > certs/mcp.ext
+    echo "subjectAltName=DNS:mcp-server,DNS:proxy,DNS:localhost,IP:127.0.0.1" > certs/mcp.ext
     openssl req -new -key certs/mcp.key -out certs/mcp.csr \
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=mcp-server" >/dev/null 2>&1
     openssl x509 -req -in certs/mcp.csr \
@@ -73,6 +73,9 @@ if [ ! -f certs/mcp.crt ]; then
         -extfile certs/mcp.ext >/dev/null 2>&1
     rm certs/mcp.ext
 fi
+
+# generate combined cert bundle
+cat ./certs/ca.crt /etc/ssl/certs/ca-certificates.crt > ./certs/combined_bundle.crt
 
 # 6. Prepare mounted directories
 echo "[$(date +'%H:%M:%S')] Setting strict local directory permissions..."

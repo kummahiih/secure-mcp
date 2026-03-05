@@ -18,7 +18,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-QUERY=$1
+MODEL=$1
+QUERY=$2
 
 echo "[$(date +'%H:%M:%S')] Sending query to secure LangChain agent..."
 
@@ -27,6 +28,6 @@ curl -s -X POST https://localhost:8443/ask \
     --cacert ./certs/ca.crt \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $LANGCHAIN_API_TOKEN" \
-    -d "{\"query\": \"$QUERY\"}" | python3 -m json.tool
+    -d "{\"model\": \"$MODEL\",\"query\": \"$QUERY\"}" 
 
 echo "" # Print a final newline for terminal readability

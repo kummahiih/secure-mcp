@@ -19,19 +19,19 @@ A hardened, containerized environment for AI Agents to interact with local syste
 
 The cluster enforces an "Air-Gap" style isolation using two distinct Docker networks:
 
-| Service | Network | Exposure |
-| :--- | :--- | :--- |
-| **Caddy Sidecar** | `ext_net`, `int_net` | **Public**: Port 8443 |
-| **LangChain Server** | `int_net` | Internal Only |
-| **LiteLLM Proxy** | `int_net` | Internal Only |
-| **MCP Server** | `int_net` | Internal Only |
+### 🛰️ Service Inventory
+| Service | Image | Network(s) | Ports (Exposed) | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **`caddy-sidecar`** | `caddy:2-alpine` | `ext_net`, `int_net` | `8443:8443` | SSL Termination & External Ingress |
+| **`proxy`** | `litellm:main-latest` | `ext_net`, `int_net` | *None* | Secure Gateway to Gemini/OpenAI |
+| **`langchain-server`**| `Dockerfile.langchain`| `int_net` | *None* | Logic Engine (Agent) |
+| **`mcp-server`** | `Dockerfile.mcp` | `int_net` | *None* | Tool Provider (Workspace Access) |
 
 ### Internal Communication Path
 1.  **User Request**: `Host` -> `https://localhost:8443` -> `Caddy`
 2.  **Logic Processing**: `Caddy` -> `http://langchain-server:8000`
 3.  **Tool Execution**: `LangChain` -> `https://mcp-server:8443/read`
 4.  **Inference**: `LangChain` -> `http://proxy:4000/v1/chat/completions`
-
 ---
 
 ## 🔒 Security Guardrails

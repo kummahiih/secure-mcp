@@ -20,9 +20,8 @@ def robust_mock_load(tiktoken_bpe_file, *args, **kwargs):
 
 # --- ENVIRONMENT CONFIGURATION ---
 # These must be set BEFORE importing litellm to ensure internal clients pick them up
-os.environ["HTTP_PROXY"] = "http://caddy-sidecar:8080"
-os.environ["HTTPS_PROXY"] = "http://caddy-sidecar:8080"
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,mcp-server,langchain-server,caddy-sidecar,proxy"
+os.environ["HTTP_PROXY"] = ""
+os.environ["HTTPS_PROXY"] = ""
 
 # Re-affirm keys from Docker environment
 os.environ["LITELLM_MASTER_KEY"] = os.getenv("LITELLM_MASTER_KEY", "")

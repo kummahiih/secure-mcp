@@ -32,13 +32,7 @@ dynamic_key = os.getenv("OPENAI_API_KEY")
 if not dynamic_key:
     logging.error("DYNAMIC_AGENT_KEY (passed as OPENAI_API_KEY) is not set!")
 
-# The agent now uses the ephemeral key to authenticate with the LiteLLM proxy
-llm = ChatOpenAI(
-    model="qwen-coder",             
-    api_key=dynamic_key,            # Explicitly passing the ephemeral key
-    base_url="http://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
-    temperature=0
-)
+
 
 
 def verify_langchain_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -148,10 +142,33 @@ def list_files() -> str:
 
 
 tools = [read_workspace_file, delete_file, create_file, write_file, list_files]
-agent = create_agent(llm, tools=tools)
+
+# The agent now uses the ephemeral key to authenticate with the LiteLLM proxy
+
+
+agents = {
+    "remote": create_agent(
+        ChatOpenAI(
+            model="gemini-flash",
+            api_key=dynamic_key,            # Explicitly passing the ephemeral key
+            base_url="http://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
+            temperature=0
+            ),
+        tools=tools),
+    "local": create_agent(
+        ChatOpenAI(
+            model="qwen-coder",
+            api_key=dynamic_key,            # Explicitly passing the ephemeral key
+            base_url="http://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
+            temperature=0
+            ),
+        tools=tools),
+}
+    
 
 class QueryRequest(BaseModel):
     query: str
+    model: str
 
 @app.get("/health")
 async def health_check():
@@ -171,6 +188,7 @@ async def ask_agent(request: QueryRequest, token: str = Depends(verify_langchain
                 ("user", request.query)
             ]
         }
+        agent = agents[request.model]
         
         result = agent.invoke(inputs)
         

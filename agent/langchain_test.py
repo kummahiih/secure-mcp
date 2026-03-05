@@ -27,23 +27,36 @@ def test_read_workspace_tool(mock_get):
 
 def test_fastapi_endpoint_unauthorized():
     # 1. Test missing token entirely (Modern FastAPI HTTPBearer returns 401)
-    response = client.post("/ask", json={"query": "What is the status?"})
+    response = client.post("/ask", json={"model":"local", "query": "What is the status?"})
     assert response.status_code == 401
     
     # 2. Test invalid token (Our verify_langchain_token logic returns 401)
     headers = {"Authorization": "Bearer completely-wrong-token"}
-    response = client.post("/ask", headers=headers, json={"query": "What is the status?"})
+    response = client.post("/ask", headers=headers, json={"model":"local", "query": "What is the status?"})
     assert response.status_code == 401
+
+
+def test_fastapi_endpoint_remote_unauthorized():
+    # 1. Test missing token entirely (Modern FastAPI HTTPBearer returns 401)
+    response = client.post("/ask", json={"model":"remote", "query": "What is the status?"})
+    assert response.status_code == 401
+    
+    # 2. Test invalid token (Our verify_langchain_token logic returns 401)
+    headers = {"Authorization": "Bearer completely-wrong-token"}
+    response = client.post("/ask", headers=headers, json={"model":"remote", "query": "What is the status?"})
+    assert response.status_code == 401
+
 
 def test_fastapi_endpoint_authorized():
     # 3. Test successful authorization
     headers = {"Authorization": f"Bearer {os.environ['LANGCHAIN_API_TOKEN']}"}
-    response = client.post("/ask", headers=headers, json={"query": "What is the status?"})
+    response = client.post("/ask", headers=headers, json={"model":"local", "query": "What is the status?"})
     
     # Returns 200 OK, even if the dummy LLM key generates an internal "error" json
     assert response.status_code == 200
     json_response = response.json()
     assert "response" in json_response or "error" in json_response
+
 
 
 from server import delete_file, create_file, write_file, list_files

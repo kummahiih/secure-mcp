@@ -84,7 +84,9 @@ This project is structured into modular microservices, separating the edge routi
 The `run.sh` script automates certificate generation, token rotation, and container orchestration:
 ```bash
 ./run.sh
-./query.sh "Please read info.txt from my workspace."
+./query.sh local "Please read info.txt from my workspace."
+./query.sh remote "Please read info.txt from my workspace."
+
 ```
 
 ## 🛡️ Security & Quality Auditing

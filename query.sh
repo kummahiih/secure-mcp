@@ -13,8 +13,8 @@ source .cluster_tokens.env
 
 # 3. Require a query argument
 if [ -z "$1" ]; then
-    echo "Usage: ./query.sh \"Your question here\""
-    echo "Example: ./query.sh \"Can you read the contents of test.txt in my workspace?\""
+    echo "Usage: ./query.sh local|remote \"Your question here\""
+    echo "Example: ./query.sh local \"Can you read the contents of test.txt in my workspace?\""
     exit 1
 fi
 

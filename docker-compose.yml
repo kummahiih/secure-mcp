@@ -57,8 +57,6 @@ services:
       - ./proxy/9b5ad716431e6077c748b039600b13ad:/tmp/tiktoken_cache/9b5ad716431e6077c748b039600b13ad:ro
     # Run the mock wrapper instead of the standard LiteLLM start command
     entrypoint: ["python3", "/app/proxy_wrapper.py"]
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - int_net  # For talking to langchain-server (Internal)
       - ext_net  # For talking to OpenAI/Anthropic (Outside World)

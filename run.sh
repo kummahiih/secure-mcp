@@ -87,6 +87,8 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
 docker-compose down --rmi local --remove-orphans -v
 docker image prune -f
+# Launch the entire cluster, forcing recreation of every container
+docker-compose up -d --force-recreate
 
 echo "[$(date +'%H:%M:%S')] Building and Launching..."
 docker-compose build

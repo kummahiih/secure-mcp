@@ -4,12 +4,15 @@
 
 # --- INGRESS: Access to Agent ---
 :8443 {
-    # Provide the cert and key directly
-    tls /certs/mcp.crt /certs/mcp.key
+    tls /etc/caddy/certs/caddy.crt /etc/caddy/certs/caddy.key
 
-    # Proxy to the langchain server
-    reverse_proxy langchain-server:8000
+    reverse_proxy https://langchain-server:8000 {
+        transport http {
+            tls_trusted_ca_certs /etc/caddy/certs/ca.crt
+        }
+    }
 }
+
 
 # EGRESS
 http://:8080 {

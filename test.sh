@@ -3,6 +3,9 @@ set -e
 
 echo "[$(date +'%H:%M:%S')] Starting automated test suite..."
 
+# Generate any missing files via setup
+bash ./run.sh --setup-only 
+
 # Provide completely fake tokens so the SDKs and Docker Compose don't crash on boot
 export MCP_API_TOKEN="integration-test-mcp-token"
 export LANGCHAIN_API_TOKEN="integration-test-langchain-token"
@@ -57,19 +60,15 @@ echo "[$(date +'%H:%M:%S')] 3/6: Running Python LangChain Tests..."
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 5/6: Preparing & Building Containers..."
 
-if [ ! -f "./certs/mcp.crt" ]; then
-    echo "[$(date +'%H:%M:%S')] Certificates missing. Running init_build.sh..."
-    bash ./init_build.sh || bash ./run.sh --init-only 
-fi
-
-# Generate any missing files via setup
-bash ./run.sh --setup-only 
 
 echo "[$(date +'%H:%M:%S')] Building containers from scratch..."
 docker-compose build
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 6/6: Running Docker Integration Tests..."
+
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
 
 echo "[$(date +'%H:%M:%S')] Starting containers..."
 docker-compose up -d --force-recreate

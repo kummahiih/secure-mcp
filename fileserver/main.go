@@ -239,5 +239,5 @@ func main() {
 	}
 
 	log.Println("MCP Server listening on :8443 with TLS")
-	log.Fatal(server.ListenAndServeTLS("/certs/mcp.crt", "/certs/mcp.key"))
+	log.Fatal(server.ListenAndServeTLS("/app/certs/mcp.crt", "/app/certs/mcp.key"))
 }

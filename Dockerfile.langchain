@@ -1,17 +1,17 @@
-# Stage 1: Certificate Signer (The Secure Gateway)
 FROM alpine:3.23.3 AS signer
-RUN apk add --no-cache openssl
+# Bumping the pinned version to match the current Alpine repo
+RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 
 # Securely mount the CA key from the host to sign the agent's unique cert
-RUN --mount=type=bind,source=./certs/ca.key,target=/tmp/ca.key \
-    --mount=type=bind,source=./certs/ca.crt,target=/tmp/ca.crt \
+
+RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
+    --mount=type=bind,src=./certs/ca.crt,target=/tmp/ca.crt \
     openssl genrsa -out agent.key 2048 && \
     openssl req -new -key agent.key -out agent.csr -subj "/CN=langchain-server" && \
-    echo "subjectAltName=DNS:langchain-server,DNS:localhost,IP:127.0.0.1" > agent.ext && \
+    echo "subjectAltName=DNS:localhost,DNS:langchain-server,IP:127.0.0.1" > agent.ext && \
     openssl x509 -req -in agent.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \
     -out agent.crt -days 365 -sha256 -extfile agent.ext
-
 
 FROM python:3.12-slim
 

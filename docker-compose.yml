@@ -1,14 +1,15 @@
 services:
   caddy-sidecar:
-    image: caddy:2-alpine
     container_name: caddy-sidecar
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     ports:
       - "8443:8443"  # Ingress
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./certs:/certs:ro  # Mount CA for Caddy trust
     environment:
       - HOST_DOMAIN=${HOST_DOMAIN}
       # Tell Caddy to use /tmp for its internal files so it doesn't crash from permission errors
@@ -77,9 +78,9 @@ services:
       - LANGCHAIN_API_TOKEN=${LANGCHAIN_API_TOKEN}
       - MCP_SERVER_URL=https://mcp-server:8443
       - LANGCHAIN_DEBUG=true
-      - CURL_CA_BUNDLE=/certs/ca.crt
-      - REQUESTS_CA_BUNDLE=/certs/ca.crt
-      - SSL_CERT_FILE=/certs/ca.crt
+      - CURL_CA_BUNDLE=/app/certs/ca.crt
+      - REQUESTS_CA_BUNDLE=/app/certs/ca.crt
+      - SSL_CERT_FILE=/app/certs/ca.crt
       # If LangChain uses older urllib3, this sometimes works:
       - PYTHONHTTPSVERIFY=0
     networks:
@@ -97,7 +98,7 @@ services:
     user: "1000:1000"
     environment:
       - MCP_API_TOKEN=${MCP_API_TOKEN}
-      - SSL_CERT_FILE=/certs/ca.crt
+      - SSL_CERT_FILE=/app/certs/ca.crt
     volumes:
       - ./workspace:/workspace
     networks:

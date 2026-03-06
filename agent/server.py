@@ -62,7 +62,7 @@ def read_workspace_file(file_path: str) -> str:
     
     try:
         logger.info(f"Requesting file: {file_path}")
-        response = requests.get(endpoint, headers=headers, verify="/certs/ca.crt", timeout=10)
+        response = requests.get(endpoint, headers=headers, verify="/app/certs/ca.crt", timeout=10)
         logger.info(f"Server returned {response.status_code} {response.text}")
 
         if response.status_code == 200:
@@ -86,7 +86,7 @@ def delete_file(path: str):
     """Removes a file from the workspace."""
     resp = requests.delete(f"{MCP_SERVER_URL}/remove?path={path}", 
                            headers={"Authorization": f"Bearer {MCP_API_TOKEN}"},
-                           verify="/certs/ca.crt")
+                           verify="/app/certs/ca.crt")
     return "File deleted" if resp.status_code == 200 else f"Error: {resp.text}"
 
 @tool
@@ -94,7 +94,7 @@ def create_file(path: str):
     """Creates a new empty file in the workspace."""
     resp = requests.post(f"{MCP_SERVER_URL}/create?path={path}", 
                          headers={"Authorization": f"Bearer {MCP_API_TOKEN}"},
-                         verify="/certs/ca.crt")
+                         verify="/app/certs/ca.crt")
     return "File created" if resp.status_code == 201 else f"Error: {resp.text}"
 
 @tool
@@ -108,8 +108,8 @@ def write_file(path: str, content: str) -> str:
     headers = {"Authorization": f"Bearer {MCP_API_TOKEN}"}
     
     try:
-        # verify="/certs/ca.crt" ensures the internal TLS is trusted
-        response = requests.post(url, json=payload, headers=headers, verify="/certs/ca.crt")
+        # verify="/app/certs/ca.crt" ensures the internal TLS is trusted
+        response = requests.post(url, json=payload, headers=headers, verify="/app/certs/ca.crt")
         
         if response.status_code == 200:
             return f"Successfully wrote to {path}"
@@ -130,7 +130,7 @@ def list_files() -> str:
     headers = {"Authorization": f"Bearer {MCP_API_TOKEN}"}
     
     try:
-        response = requests.get(url, headers=headers, verify="/certs/ca.crt")
+        response = requests.get(url, headers=headers, verify="/app/certs/ca.crt")
         if response.status_code == 200:
             files = response.json().get("files", [])
             # Always return a JSON object for unambiguous parsing
@@ -223,4 +223,11 @@ async def ask_agent(request: QueryRequest, token: str = Depends(verify_langchain
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app, # Or "server:app" depending on your setup
+        host="0.0.0.0",
+        port=8000,
+        # Enable HTTPS using the container's internal certificates
+        ssl_keyfile="/app/certs/agent.key",
+        ssl_certfile="/app/certs/agent.crt"
+    )

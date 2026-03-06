@@ -1,0 +1,28 @@
+FROM alpine:3.23.3 AS signer
+# Bumping the pinned version to match the current Alpine repo
+RUN apk add --no-cache openssl=3.5.5-r0
+WORKDIR /certs
+
+# Added explicit './' to source paths for better BuildKit compatibility
+RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
+    --mount=type=bind,src=./certs/ca.crt,target=/tmp/ca.crt \
+    openssl genrsa -out caddy.key 2048 && \
+    openssl req -new -key caddy.key -out caddy.csr -subj "/CN=caddy-sidecar" && \
+    echo "subjectAltName=DNS:localhost,DNS:caddy-sidecar,IP:127.0.0.1" > caddy.ext && \
+    openssl x509 -req -in caddy.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \
+    -out caddy.crt -days 365 -sha256 -extfile caddy.ext
+
+# Stage 2: Final Caddy Image
+FROM caddy:2-alpine
+
+# Explicitly create the directory before copying files
+RUN mkdir -p /etc/caddy/certs
+
+# Copy the public CA so Caddy can trust the backends
+COPY ./certs/ca.crt /etc/caddy/certs/ca.crt
+# Copy Caddy's own unique identity
+COPY --from=signer /certs/caddy.crt /etc/caddy/certs/caddy.crt
+COPY --from=signer /certs/caddy.key /etc/caddy/certs/caddy.key
+
+# Ensure Caddy can read the keys
+RUN chmod 644 /etc/caddy/certs/caddy.crt && chmod 600 /etc/caddy/certs/caddy.key

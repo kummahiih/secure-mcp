@@ -22,8 +22,6 @@ obj/
 .env
 .cluster_tokens.env
 .secrets.env
-certs/
-!certs/ca.crt
 *.pem
 *.key
 *.crt

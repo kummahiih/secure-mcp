@@ -84,6 +84,8 @@ if [[ "$1" == "--setup-only" ]]; then
 fi
 
 # 7. Launch the stack
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
 echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
 docker-compose down --rmi local --remove-orphans -v
 docker image prune -f

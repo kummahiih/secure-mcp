@@ -78,6 +78,7 @@ services:
       - MCP_API_TOKEN=${MCP_API_TOKEN}
       - LANGCHAIN_API_TOKEN=${LANGCHAIN_API_TOKEN}
       - MCP_SERVER_URL=https://mcp-server:8443
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
       - LANGCHAIN_DEBUG=true
       - CURL_CA_BUNDLE=/app/certs/ca.crt
       - REQUESTS_CA_BUNDLE=/app/certs/ca.crt

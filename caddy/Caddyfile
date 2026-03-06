@@ -15,7 +15,7 @@
 
 
 # EGRESS
-http://:8080 {
+https://:8080 {
     reverse_proxy https://host.docker.internal:443 {
         # Use {$VAR} syntax and wrap in quotes
         header_up Host "{$HOST_DOMAIN}"

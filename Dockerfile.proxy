@@ -1,12 +1,13 @@
 # Stage 1: Certificate Signer
 FROM alpine:3.23.3 AS signer
+# Pinning openssl version for reproducibility
 RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 
 # Securely bind from the host context directly
 RUN --mount=type=bind,source=certs/ca.key,target=/tmp/ca.key \
     --mount=type=bind,source=certs/ca.crt,target=/tmp/ca.crt \
-    openssl genrsa -out proxy.key 2048 && \
+    openssl genrsa -out proxy.key 3072 && \
     openssl req -new -key proxy.key -out proxy.csr -subj "/CN=proxy" && \
     echo "subjectAltName=DNS:proxy,DNS:localhost,IP:127.0.0.1" > proxy.ext && \
     openssl x509 -req -in proxy.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \

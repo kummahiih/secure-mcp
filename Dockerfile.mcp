@@ -5,7 +5,7 @@ RUN go build -o mcp-server main.go
 
 # Stage 2: Certificate Signer
 FROM alpine:3.23.3 AS signer
-# Bumping the pinned version to match the current Alpine repo
+# Pinning openssl version for reproducibility
 RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 

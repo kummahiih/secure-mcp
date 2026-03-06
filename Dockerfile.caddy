@@ -1,12 +1,12 @@
 FROM alpine:3.23.3 AS signer
-# Bumping the pinned version to match the current Alpine repo
+# Pinning openssl version for reproducibility
 RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 
 # Added explicit './' to source paths for better BuildKit compatibility
 RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
     --mount=type=bind,src=./certs/ca.crt,target=/tmp/ca.crt \
-    openssl genrsa -out caddy.key 2048 && \
+    openssl genrsa -out caddy.key 3072 && \
     openssl req -new -key caddy.key -out caddy.csr -subj "/CN=caddy-sidecar" && \
     echo "subjectAltName=DNS:localhost,DNS:caddy-sidecar,IP:127.0.0.1" > caddy.ext && \
     openssl x509 -req -in caddy.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \

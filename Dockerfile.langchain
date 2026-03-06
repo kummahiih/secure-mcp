@@ -1,5 +1,5 @@
 FROM alpine:3.23.3 AS signer
-# Bumping the pinned version to match the current Alpine repo
+# Pinning openssl version for reproducibility
 RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 
@@ -7,7 +7,7 @@ WORKDIR /certs
 
 RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
     --mount=type=bind,src=./certs/ca.crt,target=/tmp/ca.crt \
-    openssl genrsa -out agent.key 2048 && \
+    openssl genrsa -out agent.key 3072 && \
     openssl req -new -key agent.key -out agent.csr -subj "/CN=langchain-server" && \
     echo "subjectAltName=DNS:localhost,DNS:langchain-server,IP:127.0.0.1" > agent.ext && \
     openssl x509 -req -in agent.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key -CAcreateserial \

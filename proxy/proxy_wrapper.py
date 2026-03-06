@@ -31,7 +31,7 @@ os.environ["OLLAMA_API_KEY"] = os.getenv("OLLAMA_API_KEY", "")
 with patch("tiktoken.load.load_tiktoken_bpe", side_effect=robust_mock_load):
     print("[HACK] Tiktoken fetcher successfully mocked.")
     print(f"[INFO] Routing egress via: {os.environ['HTTP_PROXY']}")
-    
+
     # Import here so it sees the modified environment
     from litellm.proxy.proxy_cli import run_server
     
@@ -41,6 +41,9 @@ with patch("tiktoken.load.load_tiktoken_bpe", side_effect=robust_mock_load):
             "litellm", 
             "--config", "/tmp/config.yaml", 
             "--port", "4000", 
-            "--host", "0.0.0.0"
+            "--host", "0.0.0.0",
+            # Add the internal Zero Trust identity
+            "--ssl_keyfile_path", "/app/certs/proxy.key",
+            "--ssl_certfile_path", "/app/certs/proxy.crt"
         ]
         run_server()

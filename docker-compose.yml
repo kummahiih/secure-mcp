@@ -23,7 +23,9 @@ services:
     restart: unless-stopped
 
   proxy:
-    image: ghcr.io/berriai/litellm:main-latest
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
     container_name: litellm-proxy
     user: "1000:1000"
     cap_drop:
@@ -40,16 +42,15 @@ services:
       - LITELLM_MASTER_KEY=${DYNAMIC_AGENT_KEY}
       - LITELLM_LOG=ERROR
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
-      # Tell LiteLLM (and its underlying HTTPX/AioHTTP) to trust your CA
-      - SSL_CERT_FILE=/certs/combined_bundle.crt
-      - REQUESTS_CA_BUNDLE=/certs/combined_bundle.crt
+      # Point to the newly injected global CA bundles inside the container
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      - NO_PROXY=localhost,127.0.0.1,mcp-server,langchain-server
       - HTTP_PROXY=""
       - HTTPS_PROXY=""
-      # Ensure it doesn't try to proxy internal traffic
-      - NO_PROXY=localhost,127.0.0.1,mcp-server,langchain-server
+
 
     volumes:
-      - ./certs/combined_bundle.crt:/certs/combined_bundle.crt:ro
       - ./proxy/proxy_config.yaml:/tmp/config.yaml:ro
       - ./proxy/proxy_wrapper.py:/app/proxy_wrapper.py:ro
       # Mount the file to the path our script expects
@@ -73,7 +74,7 @@ services:
       # This is the key the Agent sends to the Proxy
       - OPENAI_API_KEY=${DYNAMIC_AGENT_KEY}
       # This tells the Agent WHERE the proxy is
-      - OPENAI_API_BASE=http://proxy:4000/v1
+      - OPENAI_API_BASE=https://proxy:4000/v1
       - MCP_API_TOKEN=${MCP_API_TOKEN}
       - LANGCHAIN_API_TOKEN=${LANGCHAIN_API_TOKEN}
       - MCP_SERVER_URL=https://mcp-server:8443

@@ -151,7 +151,7 @@ agents = {
         ChatOpenAI(
             model="gemini-flash",
             api_key=dynamic_key,            # Explicitly passing the ephemeral key
-            base_url="http://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
+            base_url="https://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
             temperature=0
             ),
         tools=tools),
@@ -159,7 +159,7 @@ agents = {
         ChatOpenAI(
             model="qwen-coder",
             api_key=dynamic_key,            # Explicitly passing the ephemeral key
-            base_url="http://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
+            base_url="https://proxy:4000/v1", # Routing to the 'proxy' service on port 4000
             temperature=0
             ),
         tools=tools),

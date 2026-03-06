@@ -60,8 +60,6 @@ if [ ! -f certs/ca.crt ]; then
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=ClusterRootCA" >/dev/null 2>&1
 fi
 
-# generate combined cert bundle
-cat ./certs/ca.crt /etc/ssl/certs/ca-certificates.crt > ./certs/combined_bundle.crt
 
 # 6. Prepare mounted directories
 echo "[$(date +'%H:%M:%S')] Setting strict local directory permissions..."

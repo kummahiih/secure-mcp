@@ -29,9 +29,9 @@ The cluster enforces an "Air-Gap" style isolation using two distinct Docker netw
 
 ### Internal Communication Path
 1.  **User Request**: `Host` -> `https://localhost:8443` -> `Caddy`
-2.  **Logic Processing**: `Caddy` -> `http://langchain-server:8000`
+2.  **Logic Processing**: `Caddy` -> `https://langchain-server:8000`
 3.  **Tool Execution**: `LangChain` -> `https://mcp-server:8443/read`
-4.  **Inference**: `LangChain` -> `http://proxy:4000/v1/chat/completions`
+4.  **Inference**: `LangChain` -> `https://proxy:4000/v1/chat/completions`
 ---
 
 ## 🔒 Security Guardrails
@@ -45,6 +45,9 @@ The MCP server implements the new `os.OpenRoot` capability. This creates a logic
 ### 3. Dual-Layer Authentication
 * **Ingress Auth**: Managed by Caddy/FastAPI via `LANGCHAIN_API_TOKEN`.
 * **Service Auth**: The LangChain server communicates with the MCP server using a dedicated `MCP_API_TOKEN`.
+
+### 4. Using https everywhere
+
 
 ---
 

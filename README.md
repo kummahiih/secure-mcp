@@ -74,6 +74,8 @@ This project is structured into modular microservices, separating the edge routi
 ├── docker-compose.yml      # Orchestrates the Caddy, Agent, and MCP containers
 ├── Dockerfile.langchain    # Container build steps for the Python agent
 ├── Dockerfile.mcp          # Container build steps for the Go fileserver
+├── Dockerfile.caddy        # Container build steps for the sidecar Caddy
+├── Dockerfile.proxy        # Container build steps for the LiteLLM Proxy
 ├── init_build.sh           # Initial environment setup and build script
 ├── query.sh                # CLI utility for sending test queries to the agent
 ├── run.sh                  # Operational script (generates certs, manages lifecycle)

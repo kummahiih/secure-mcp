@@ -82,8 +82,6 @@ services:
       - SSL_CERT_FILE=/certs/ca.crt
       # If LangChain uses older urllib3, this sometimes works:
       - PYTHONHTTPSVERIFY=0
-    volumes:
-      - ./certs:/certs:ro
     networks:
       - int_net
     depends_on:
@@ -102,7 +100,6 @@ services:
       - SSL_CERT_FILE=/certs/ca.crt
     volumes:
       - ./workspace:/workspace
-      - ./certs:/certs:ro
     networks:
       - int_net
     restart: unless-stopped

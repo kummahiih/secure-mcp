@@ -53,8 +53,6 @@ services:
     volumes:
       - ./proxy/proxy_config.yaml:/tmp/config.yaml:ro
       - ./proxy/proxy_wrapper.py:/app/proxy_wrapper.py:ro
-      # Mount the file to the path our script expects
-      - ./proxy/9b5ad716431e6077c748b039600b13ad:/tmp/tiktoken_cache/9b5ad716431e6077c748b039600b13ad:ro
     # Run the mock wrapper instead of the standard LiteLLM start command
     entrypoint: ["python3", "/app/proxy_wrapper.py"]
     networks:

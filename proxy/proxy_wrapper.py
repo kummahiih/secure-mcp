@@ -1,49 +1,28 @@
-import os
 import sys
-import base64
-from unittest.mock import patch
+import os
+# Import here so it sees the modified environment
+from litellm.proxy.proxy_cli import run_server
 
-# --- THE HACK: FORCE LOCAL LOADING ---
-def robust_mock_load(tiktoken_bpe_file, *args, **kwargs):
-    local_file_path = "/tmp/tiktoken_cache/9b5ad716431e6077c748b039600b13ad"
-    if not os.path.exists(local_file_path):
-        print(f"[ERROR] Mock failed: {local_file_path} not found!")
-        sys.exit(1)
-        
-    with open(local_file_path, "rb") as f:
-        # Re-implementing parsing logic for Tiktoken's expected format
-        return {
-            base64.b64decode(parts[0]): int(parts[1])
-            for line in f
-            if (parts := line.split())
-        }
+print("env variables:")
+print('http_proxy', os.environ.get('http_proxy',   None) )
+print('https_proxy', os.environ.get('https_proxy', None) )
+print('HTTP_PROXY', os.environ.get('HTTP_PROXY',   None) )
+print('HTTPS_PROXY', os.environ.get('HTTPS_PROXY', None) )
 
-# --- ENVIRONMENT CONFIGURATION ---
-# These must be set BEFORE importing litellm to ensure internal clients pick them up
-os.environ["HTTP_PROXY"] = ""
-os.environ["HTTPS_PROXY"] = ""
+os.environ['http_proxy'] = ''
+os.environ['https_proxy'] = ''
+os.environ['HTTP_PROXY'] = ''
+os.environ['HTTPS_PROXY'] = ''
 
-# Re-affirm keys from Docker environment
-os.environ["LITELLM_MASTER_KEY"] = os.getenv("LITELLM_MASTER_KEY", "")
-os.environ["OLLAMA_API_KEY"] = os.getenv("OLLAMA_API_KEY", "")
-
-# Apply the patch and launch LiteLLM
-with patch("tiktoken.load.load_tiktoken_bpe", side_effect=robust_mock_load):
-    print("[HACK] Tiktoken fetcher successfully mocked.")
-    print(f"[INFO] Routing egress via: {os.environ['HTTP_PROXY']}")
-
-    # Import here so it sees the modified environment
-    from litellm.proxy.proxy_cli import run_server
-    
-    if __name__ == "__main__":
-        # sys.argv mimics CLI arguments for the run_server function
-        sys.argv = [
-            "litellm", 
-            "--config", "/tmp/config.yaml", 
-            "--port", "4000", 
-            "--host", "0.0.0.0",
-            # Add the internal Zero Trust identity
-            "--ssl_keyfile_path", "/app/certs/proxy.key",
-            "--ssl_certfile_path", "/app/certs/proxy.crt"
-        ]
-        run_server()
+if __name__ == "__main__":
+    # sys.argv mimics CLI arguments for the run_server function
+    sys.argv = [
+        "litellm", 
+        "--config", "/tmp/config.yaml", 
+        "--port", "4000", 
+        "--host", "0.0.0.0",
+        # Add the internal Zero Trust identity
+        "--ssl_keyfile_path", "/app/certs/proxy.key",
+        "--ssl_certfile_path", "/app/certs/proxy.crt"
+    ]
+    run_server()

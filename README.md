@@ -39,7 +39,7 @@ The cluster enforces an "Air-Gap" style isolation using two distinct Docker netw
 ### 1. Unified Trust Chain
 All services mount a shared `./certs` volume. By setting the `SSL_CERT_FILE` environment variable, every container (Python, Go, and Caddy) trusts the internal Root CA, allowing for seamless internal HTTPS without `InsecureRequestWarning`.
 
-### 2. Filesystem Jail (Go 1.24 OpenRoot)
+### 2. Filesystem Jail (Go 1.26 OpenRoot)
 The MCP server implements the new `os.OpenRoot` capability. This creates a logical "jail" at `/workspace`. Even if an agent is prompted to perform a directory traversal attack (e.g., `../../etc/passwd`), the Go runtime will block the request at the system level.
 
 ### 3. Dual-Layer Authentication
@@ -58,29 +58,31 @@ This project is structured into modular microservices, separating the edge routi
 
 ```text
 .
-├── agent/                  # Python LangChain integration and agent logic
-│   ├── langchain_test.py   # Unit tests for the agent and tools
-│   └── server.py           # FastAPI server exposing the agent endpoints
-├── caddy/                  # Edge router and reverse proxy
-│   ├── Caddyfile           # TLS and reverse proxy configuration
-│   └── caddy_test.sh       # Validation script for Caddy configuration
-├── fileserver/             # Golang MCP (Model Context Protocol) file server
-│   ├── go.mod              # Go module dependencies
-│   ├── main.go             # Core MCP server logic and tool handlers
-│   └── mcp_test.go         # Unit tests for the Go MCP handlers
-├── proxy/                  # Local proxy wrappers and routing
-│   ├── proxy_config.yaml   # Proxy configuration rules
-│   └── proxy_wrapper.py    # Python wrapper for proxy execution
-├── docker-compose.yml      # Orchestrates the Caddy, Agent, and MCP containers
-├── Dockerfile.langchain    # Container build steps for the Python agent
-├── Dockerfile.mcp          # Container build steps for the Go fileserver
-├── Dockerfile.caddy        # Container build steps for the sidecar Caddy
-├── Dockerfile.proxy        # Container build steps for the LiteLLM Proxy
+├──cluster/
+|   ├── agent/                  # Python LangChain integration and agent logic
+│   | ├── langchain_test.py     # Unit tests for the agent and tools
+│   | └── server.py             # FastAPI server exposing the agent endpoints
+|   ├── caddy/                  # Edge router and reverse proxy
+|   │   ├── Caddyfile           # TLS and reverse proxy configuration
+|   │   └── caddy_test.sh       # Validation script for Caddy configuration
+|   ├── fileserver/             # Golang MCP (Model Context Protocol) file server
+|   │   ├── go.mod              # Go module dependencies
+|   │   ├── main.go             # Core MCP server logic and tool handlers
+|   │   └── mcp_test.go         # Unit tests for the Go MCP handlers
+|   ├── proxy/                  # Local proxy wrappers and routing
+|   │   ├── proxy_config.yaml   # Proxy configuration rules
+|   │   └── proxy_wrapper.py    # Python wrapper for proxy execution
+|   ├── docker-compose.yml      # Orchestrates the Caddy, Agent, and MCP containers
+|   ├── Dockerfile.langchain    # Container build steps for the Python agent
+|   ├── Dockerfile.mcp          # Container build steps for the Go fileserver
+|   ├── Dockerfile.caddy        # Container build steps for the sidecar Caddy
+|   ├── Dockerfile.proxy        # Container build steps for the LiteLLM Proxy
+|   └── start-cluster.sh        # starts the cluster (used by run.sh)
 ├── init_build.sh           # Initial environment setup and build script
 ├── query.sh                # CLI utility for sending test queries to the agent
 ├── run.sh                  # Operational script (generates certs, manages lifecycle)
 ├── test.sh                 # Master test suite (runs unit and integration tests)
-└── README.md               # Project documentation
+└── README.md               # Project intruduction
 ```
 
 ## 🛠️ Operational Commands

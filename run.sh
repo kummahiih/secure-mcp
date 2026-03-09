@@ -49,14 +49,14 @@ LANGCHAIN_API_TOKEN=$(openssl rand -hex 32)
 } > .cluster_tokens.env
 
 # Ensure directories exist
-mkdir -p certs workspace
+mkdir -p cluster/certs cluster/workspace
 
 # 4. Generate the Root Certificate Authority (CA)
-if [ ! -f certs/ca.crt ]; then
+if [ ! -f cluster/certs/ca.crt ]; then
     echo "[$(date +'%H:%M:%S')] Generating Root CA..."
-    openssl genrsa -out certs/ca.key 4096
-    openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 3650 \
-        -out certs/ca.crt \
+    openssl genrsa -out cluster/certs/ca.key 4096
+    openssl req -x509 -new -nodes -key cluster/certs/ca.key -sha256 -days 3650 \
+        -out cluster/certs/ca.crt \
         -subj "/C=FI/ST=Uusimaa/L=Espoo/O=LocalCluster/CN=ClusterRootCA" >/dev/null 2>&1
 fi
 
@@ -65,11 +65,10 @@ fi
 echo "[$(date +'%H:%M:%S')] Setting strict local directory permissions..."
 
 # 750: You can do all, Group can read/enter, Others are completely blocked.
-chmod 750 certs workspace
+chmod 750 cluster/certs cluster/workspace
 
 # 640: You can read/write, Group can read, Others get NOTHING.
-chmod 640 certs/*
-
+chmod 640 cluster/certs/*
 
 
 # --- NEW: Check for setup-only flag ---
@@ -82,14 +81,14 @@ fi
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
-docker-compose down --rmi local --remove-orphans -v
-docker image prune -f
+(cd cluster/ && docker-compose down --rmi local --remove-orphans -)
+(cd cluster/ && docker image prune -f)
 # Launch the entire cluster, forcing recreation of every container
-docker-compose up -d --force-recreate
+(cd cluster/ && docker-compose up -d --force-recreate)
 
 echo "[$(date +'%H:%M:%S')] Building and Launching..."
-docker-compose build
-docker-compose up -d
+(cd cluster/ && docker-compose build)
+(cd cluster/ && docker-compose up -d)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] Cluster is up and running!"

@@ -18,25 +18,26 @@ echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 4/6: Running Dependency Security Scans..."
 
 echo "[+] Scanning Go Fileserver (govulncheck)..."
-(cd fileserver && go run golang.org/x/vuln/cmd/govulncheck@latest ./...)
+(cd cluster/fileserver && go run golang.org/x/vuln/cmd/govulncheck@latest ./...)
 
 echo "[+] Scanning Python Agent (pip-audit)..."
 # Activates the environment, installs pip-audit, and scans the installed packages
 echo "🔍 Auditing Python dependencies..."
-docker run --rm \
+(cd cluster && \
+    docker run --rm \
     -e PIP_ROOT_USER_ACTION=ignore \
     -v "$(pwd)":/app \
     -w /app \
     python:3.11-slim /bin/bash -c \
     "pip install --quiet --upgrade pip && pip install --quiet pip-audit && pip-audit -r agent/requirements.txt"
-
-DOCKERFILES=("Dockerfile.langchain" "Dockerfile.mcp")
+)
+DOCKERFILES=("Dockerfile.caddy" "Dockerfile.langchain" "Dockerfile.mcp" "Dockerfile.proxy")
 
 echo "[+] Lint Dockerfiles (Hadolint)"
 for df in "${DOCKERFILES[@]}"; do
     echo "🛡️  Linting $df..."
-    docker run --rm -i hadolint/hadolint:v2.12.0 < "$df"
-    if [ $? -eq 0 ]; then echo "✅ $df follows best practices."; else echo "⚠️  Issues found in $df"; EXIT_CODE=1; fi
+    docker run --rm -i hadolint/hadolint:v2.12.0 < cluster/"$df"
+    if [ $? -eq 0 ]; then echo "✅ $df follows best practices."; else echo "⚠️  Issues found in cluster/$df"; EXIT_CODE=1; fi
 done
 
 echo "[+] Scan Docker Compose Configuration (Trivy)"
@@ -46,15 +47,15 @@ if [ $? -eq 0 ]; then echo "✅ Infrastructure config looks solid."; else echo "
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 1/6: Validating Caddy Edge Router..."
-bash ./caddy/caddy_test.sh
+bash ./cluster/caddy/caddy_test.sh
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 2/6: Running Golang MCP Server Tests..."
-(cd fileserver && go test mcp_test.go main.go -v)
+(cd cluster/fileserver && go test mcp_test.go main.go -v)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 3/6: Running Python LangChain Tests..."
-(cd agent && source ../venv/bin/activate && pytest langchain_test.py -v)
+(source .venv/bin/activate && cd cluster/agent && pytest langchain_test.py -v)
 
 
 echo "----------------------------------------"
@@ -70,8 +71,9 @@ echo "[$(date +'%H:%M:%S')] 6/6: Running Docker Integration Tests..."
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
+
 echo "[$(date +'%H:%M:%S')] Starting containers..."
-docker-compose up -d --force-recreate
+(cd cluster && docker-compose up -d --force-recreate)
 
 echo "[$(date +'%H:%M:%S')] Waiting for Caddy and FastAPI to initialize (20s)..."
 sleep 20
@@ -88,13 +90,13 @@ if [ "$HTTP_STATUS" -eq 200 ]; then
 else
     echo "[$(date +'%H:%M:%S')] Error: Endpoint returned HTTP $HTTP_STATUS."
     echo "[$(date +'%H:%M:%S')] Dumping container logs for debugging:"
-    docker-compose logs
-    docker-compose down
+    (cd cluster && docker-compose logs)
+    (cd cluster && docker-compose down)
     exit 1
 fi
 
 echo "[$(date +'%H:%M:%S')] Tearing down integration containers..."
-docker-compose down
+(cd cluster && docker-compose down)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] All unit, security, and integration tests passed successfully!"

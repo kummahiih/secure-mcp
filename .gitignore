@@ -2,6 +2,7 @@
 .secrets.env
 .cluster_tokens.env
 .env
+cluster/certs/
 certs/
 workspace/
 
@@ -13,6 +14,3 @@ __pycache__/
 #aider AI chat histories
 .aider.*
 
-#tokens
-proxy/cl100k_base.tiktoken
-proxy/9b5ad716431e6077c748b039600b13ad

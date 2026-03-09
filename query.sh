@@ -25,7 +25,7 @@ echo "[$(date +'%H:%M:%S')] Sending query to secure LangChain agent..."
 
 # 4. Execute the authenticated request
 curl -s -X POST https://localhost:8443/ask \
-    --cacert ./certs/ca.crt \
+    --cacert ./cluster/certs/ca.crt \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $LANGCHAIN_API_TOKEN" \
     -d "{\"model\": \"$MODEL\",\"query\": \"$QUERY\"}" 

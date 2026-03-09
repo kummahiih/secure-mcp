@@ -42,12 +42,12 @@ done
 
 echo "[+] Scan Docker Compose Configuration (Trivy)"
 echo "Scanning docker-compose.yml for misconfigurations..."
-docker run --rm -v "$(pwd)":/app -w /app aquasec/trivy config .
+(cd cluster && docker run --rm -v "$(pwd)":/app -w /app aquasec/trivy config .)
 if [ $? -eq 0 ]; then echo "✅ Infrastructure config looks solid."; else echo "❌ Issues found in Compose file."; EXIT_CODE=1; fi
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 1/6: Validating Caddy Edge Router..."
-bash ./cluster/caddy/caddy_test.sh
+(bash ./cluster/caddy/caddy_test.sh)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 2/6: Running Golang MCP Server Tests..."
@@ -55,7 +55,7 @@ echo "[$(date +'%H:%M:%S')] 2/6: Running Golang MCP Server Tests..."
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 3/6: Running Python LangChain Tests..."
-(source .venv/bin/activate && cd cluster/agent && pytest langchain_test.py -v)
+(source ./venv/bin/activate && cd cluster/agent && pytest langchain_test.py -v)
 
 
 echo "----------------------------------------"
@@ -63,7 +63,7 @@ echo "[$(date +'%H:%M:%S')] 5/6: Preparing & Building Containers..."
 
 
 echo "[$(date +'%H:%M:%S')] Building containers from scratch..."
-docker-compose build
+(cd cluster && docker-compose build)
 
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 6/6: Running Docker Integration Tests..."

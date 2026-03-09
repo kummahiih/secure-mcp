@@ -29,9 +29,9 @@ echo "[$(date +'%H:%M:%S')] Cleaning up old token files..."
 rm -f .env .cluster_tokens.env
 
 echo "[$(date +'%H:%M:%S')] Generating fresh cluster tokens..."
-DYNAMIC_AGENT_KEY="sk-$(openssl rand -hex 16)"
-MCP_API_TOKEN=$(openssl rand -hex 32)
-LANGCHAIN_API_TOKEN=$(openssl rand -hex 32)
+export DYNAMIC_AGENT_KEY="sk-$(openssl rand -hex 16)"
+export MCP_API_TOKEN=$(openssl rand -hex 32)
+export LANGCHAIN_API_TOKEN=$(openssl rand -hex 32)
 
 # Create the standard .env file for Docker Compose
 # We append the .secrets.env content so Docker Compose has all keys in one place
@@ -81,7 +81,7 @@ fi
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
-(cd cluster/ && docker-compose down --rmi local --remove-orphans -)
+(cd cluster/ && docker-compose down --rmi local --remove-orphans)
 (cd cluster/ && docker image prune -f)
 # Launch the entire cluster, forcing recreation of every container
 (cd cluster/ && docker-compose up -d --force-recreate)

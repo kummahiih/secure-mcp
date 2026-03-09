@@ -3,7 +3,6 @@ FROM alpine:3.23.3 AS signer
 RUN apk add --no-cache openssl=3.5.5-r0
 WORKDIR /certs
 
-# Added explicit './' to source paths for better BuildKit compatibility
 RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
     --mount=type=bind,src=./certs/ca.crt,target=/tmp/ca.crt \
     openssl genrsa -out caddy.key 3072 && \
@@ -15,6 +14,9 @@ RUN --mount=type=bind,src=./certs/ca.key,target=/tmp/ca.key \
 # Stage 2: Final Caddy Image
 FROM caddy:2-alpine
 
+# 1. Create a non-root user and group
+RUN addgroup -S caddygroup && adduser -S caddyuser -G caddygroup
+
 # Explicitly create the directory before copying files
 RUN mkdir -p /etc/caddy/certs
 
@@ -24,5 +26,17 @@ COPY ./certs/ca.crt /etc/caddy/certs/ca.crt
 COPY --from=signer /certs/caddy.crt /etc/caddy/certs/caddy.crt
 COPY --from=signer /certs/caddy.key /etc/caddy/certs/caddy.key
 
-# Ensure Caddy can read the keys
-RUN chmod 644 /etc/caddy/certs/caddy.crt && chmod 600 /etc/caddy/certs/caddy.key
+# 2. Ensure Caddy directories exist and are owned by the non-root user
+RUN mkdir -p /data/caddy /config/caddy && \
+    chown -R caddyuser:caddygroup /etc/caddy /data /config
+
+# 3. Ensure the non-root user has the correct read permissions for the keys
+RUN chmod 644 /etc/caddy/certs/caddy.crt && \
+    chmod 600 /etc/caddy/certs/caddy.key && \
+    chmod 644 /etc/caddy/certs/ca.crt
+
+# 4. Switch to the non-root user
+USER caddyuser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider --no-check-certificate https://localhost:8443/ || exit 1

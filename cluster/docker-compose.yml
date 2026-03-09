@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.caddy
-    ports:
-      - "8443:8443"  # Ingress
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -15,6 +13,8 @@ services:
       # Tell Caddy to use /tmp for its internal files so it doesn't crash from permission errors
       - XDG_DATA_HOME=/tmp/caddy_data
       - XDG_CONFIG_HOME=/tmp/caddy_config
+    ports:
+      - "8443:8443"  # Ingress
     networks:
       - ext_net
       - int_net

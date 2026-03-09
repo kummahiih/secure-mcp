@@ -52,7 +52,7 @@ RUN cat /app/certs/ca.crt >> "$(python -c 'import certifi; print(certifi.where()
 RUN chown -R appuser:appgroup /app/certs && chmod 600 /app/certs/agent.key
 
 # Copy the server script and enforce correct ownership
-COPY --chown=appuser:appgroup agent/server.py .
+COPY --chown=appuser:appgroup agent/*.py .
 
 # Explicitly switch to the non-root user before running any code
 USER appuser

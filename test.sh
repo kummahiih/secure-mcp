@@ -68,12 +68,8 @@ echo "[$(date +'%H:%M:%S')] Building containers from scratch..."
 echo "----------------------------------------"
 echo "[$(date +'%H:%M:%S')] 6/6: Running Docker Integration Tests..."
 
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-
-
-echo "[$(date +'%H:%M:%S')] Starting containers..."
-(cd cluster && docker-compose up -d --force-recreate)
+# 7. Launch the stack
+(./cluster/start-cluster.sh)
 
 echo "[$(date +'%H:%M:%S')] Waiting for Caddy and FastAPI to initialize (20s)..."
 sleep 20

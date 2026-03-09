@@ -78,17 +78,4 @@ if [[ "$1" == "--setup-only" ]]; then
 fi
 
 # 7. Launch the stack
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-echo "[$(date +'%H:%M:%S')] Tearing down old containers..."
-(cd cluster/ && docker-compose down --rmi local --remove-orphans)
-(cd cluster/ && docker image prune -f)
-# Launch the entire cluster, forcing recreation of every container
-(cd cluster/ && docker-compose up -d --force-recreate)
-
-echo "[$(date +'%H:%M:%S')] Building and Launching..."
-(cd cluster/ && docker-compose build)
-(cd cluster/ && docker-compose up -d)
-
-echo "----------------------------------------"
-echo "[$(date +'%H:%M:%S')] Cluster is up and running!"
+(./cluster/start-cluster.sh)

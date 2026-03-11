@@ -11,7 +11,7 @@ A hardened, containerized environment for AI Agents to interact with local syste
 * **Caddy Sidecar**: The gateway. Handles SSL termination (TLS 1.3) and provides a secure ingress point to the internal network.
 * **LangChain Server**: The orchestrator. Runs the LangGraph/Agent logic and coordinates between the LLM and local tools.
 * **LiteLLM Proxy**: The API gateway. Provides a unified interface for LLM providers (Ollama, OpenAI, etc.) while managing egress credentials.
-* **MCP Server (Go 1.24)**: The execution layer. A secure Go service using `os.OpenRoot` to provide restricted filesystem access to the `/workspace` volume.
+* **MCP Server**: The execution layer. A secure Go service using `os.OpenRoot` to provide restricted filesystem access to the `/workspace` volume.
 
 ---
 
@@ -39,7 +39,7 @@ The cluster enforces an "Air-Gap" style isolation using two distinct Docker netw
 ### 1. Unified Trust Chain
 All services mount a shared `./certs` volume. By setting the `SSL_CERT_FILE` environment variable, every container (Python, Go, and Caddy) trusts the internal Root CA, allowing for seamless internal HTTPS without `InsecureRequestWarning`.
 
-### 2. Filesystem Jail (Go 1.26 OpenRoot)
+### 2. Filesystem Jail
 The MCP server implements the new `os.OpenRoot` capability. This creates a logical "jail" at `/workspace`. Even if an agent is prompted to perform a directory traversal attack (e.g., `../../etc/passwd`), the Go runtime will block the request at the system level.
 
 ### 3. Dual-Layer Authentication

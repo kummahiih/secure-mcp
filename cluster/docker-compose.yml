@@ -85,8 +85,6 @@ services:
       - CURL_CA_BUNDLE=/app/certs/ca.crt
       - REQUESTS_CA_BUNDLE=/app/certs/ca.crt
       - SSL_CERT_FILE=/app/certs/ca.crt
-      # If LangChain uses older urllib3, this sometimes works:
-      - PYTHONHTTPSVERIFY=0
     networks:
       - int_net
     depends_on:

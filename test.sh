@@ -42,7 +42,7 @@ done
 
 echo "[+] Scan Docker Compose Configuration (Trivy)"
 echo "Scanning docker-compose.yml for misconfigurations..."
-(cd cluster && docker run --rm -v "$(pwd)":/app -w /app aquasec/trivy config .)
+(cd cluster && docker run --rm -v "$(pwd)":/app -w /app aquasec/trivy:0.69.3 config .)
 if [ $? -eq 0 ]; then echo "✅ Infrastructure config looks solid."; else echo "❌ Issues found in Compose file."; EXIT_CODE=1; fi
 
 echo "----------------------------------------"
